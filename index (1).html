@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0220">
+<title>Neon Snake — Synthwave</title>
+<style>
+:root{
+  --pink:#ff2bd6; --cyan:#19f6ff; --purple:#7a2bff; --gold:#ffd23f; --bg:#0b0220;
+  --glass:rgba(28,12,64,.55); --glass-b:rgba(255,255,255,.16);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:#fff;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
+body{display:flex;flex-direction:column;height:100vh;height:100dvh;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+
+/* ---------- Synthwave background ---------- */
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.sky{position:absolute;inset:0;background:linear-gradient(#08011c 0%,#1d0646 38%,#4a0f7a 55%,#c0289f 61%,#0b0220 61.2%)}
+.sun{position:absolute;left:50%;top:61%;width:min(70vmin,460px);aspect-ratio:1;transform:translate(-50%,-100%);border-radius:50%;
+  background:linear-gradient(#ffe45e 10%,#ff6a3d 45%,#ff2bd6 85%);opacity:.8;
+  -webkit-mask-image:linear-gradient(#000 52%,transparent 52% 56%,#000 56% 68%,transparent 68% 73%,#000 73% 83%,transparent 83% 89%,#000 89% 95%,transparent 95%);
+  mask-image:linear-gradient(#000 52%,transparent 52% 56%,#000 56% 68%,transparent 68% 73%,#000 73% 83%,transparent 83% 89%,#000 89% 95%,transparent 95%);
+  filter:drop-shadow(0 0 40px rgba(255,43,214,.6))}
+.floor{position:absolute;left:-60%;right:-60%;top:61%;bottom:-20%;transform-origin:50% 0;transform:perspective(380px) rotateX(62deg);
+  background:
+    linear-gradient(rgba(255,43,214,.8) 2px,transparent 2px) 0 0/100% 48px,
+    linear-gradient(90deg,rgba(25,246,255,.7) 2px,transparent 2px) 0 0/72px 100%;
+  animation:grid 1.2s linear infinite}
+@keyframes grid{from{background-position:0 0,0 0}to{background-position:0 48px,0 0}}
+.fade{position:absolute;inset:0;background:linear-gradient(rgba(11,2,32,0) 55%,rgba(11,2,32,.0) 61%,rgba(11,2,32,.85) 100%)}
+.vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 40%,rgba(0,0,0,.65) 100%)}
+
+/* ---------- Glass / HUD ---------- */
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);
+  border:1px solid var(--glass-b);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.14)}
+#hud{position:relative;z-index:2;margin:10px auto 0;max-width:calc(100% - 20px);display:flex;flex-wrap:wrap;align-items:center;
+  justify-content:space-between;gap:6px 14px;padding:8px 14px;min-width:260px}
+.stat{display:flex;flex-direction:column;min-width:0}
+.lbl{font-size:10px;letter-spacing:.22em;color:rgba(255,255,255,.6);font-weight:700}
+.stat b{font-size:clamp(17px,4.6vw,26px);line-height:1.1;font-variant-numeric:tabular-nums;font-weight:800;
+  text-shadow:0 0 10px var(--cyan)}
+#best{text-shadow:0 0 10px var(--pink)}
+.stat b.pop{animation:pop .25s ease-out}
+@keyframes pop{0%{transform:scale(1.35)}100%{transform:scale(1)}}
+.combo{min-width:74px}
+.combo b{color:#fff;transition:color .2s,text-shadow .2s}
+.combo.on b{color:var(--gold);text-shadow:0 0 12px var(--gold),0 0 26px var(--pink)}
+.bar{display:block;height:4px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;margin-top:3px}
+.bar u{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--pink));text-decoration:none;box-shadow:0 0 8px var(--pink)}
+.chips{display:flex;gap:6px;margin-top:2px}
+.chip{position:relative;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.18);
+  color:rgba(255,255,255,.35);background:rgba(255,255,255,.05);overflow:hidden;white-space:nowrap;transition:all .2s}
+.chip em{font-style:normal;font-variant-numeric:tabular-nums;margin-left:4px}
+.chip.gold.on{color:#2b1a00;border-color:var(--gold);background:linear-gradient(90deg,var(--gold) var(--p,100%),rgba(255,210,63,.25) var(--p,100%));box-shadow:0 0 14px rgba(255,210,63,.7)}
+.chip.shield.on{color:#00262a;border-color:var(--cyan);background:var(--cyan);box-shadow:0 0 14px rgba(25,246,255,.8);animation:pulse2 1s ease-in-out infinite}
+@keyframes pulse2{50%{box-shadow:0 0 24px rgba(25,246,255,1)}}
+.ibtns{display:flex;gap:6px}
+.ib{font:inherit;width:34px;height:34px;border-radius:10px;border:1px solid var(--glass-b);background:rgba(255,255,255,.08);color:#fff;font-size:15px;cursor:pointer;padding:0}
+.ib:hover{background:rgba(255,255,255,.18)}
+.ib:active{transform:scale(.93)}
+/* переключатель режимов (сам / ИИ) */
+.modes{order:10;flex:1 0 100%;display:flex;gap:4px;padding:3px;border-radius:12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08)}
+.mode{flex:1;font:inherit;font-weight:800;font-size:12px;letter-spacing:.05em;padding:7px 8px;border:0;border-radius:9px;
+  background:transparent;color:rgba(255,255,255,.65);cursor:pointer;transition:background .2s,color .2s,box-shadow .2s;white-space:nowrap}
+.mode:hover{color:#fff}
+.mode.on{color:#fff;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 0 14px rgba(255,43,214,.6)}
+#modeAI.on{background:linear-gradient(135deg,#0fb8c4,var(--purple));box-shadow:0 0 14px rgba(25,246,255,.55)}
+
+/* ---------- Stage ---------- */
+#main{position:relative;z-index:1;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden}
+#stage{position:relative;border-radius:14px;overflow:hidden;background:#07021a;
+  border:1px solid rgba(25,246,255,.55);
+  box-shadow:0 0 0 1px rgba(255,43,214,.35),0 0 30px rgba(25,246,255,.35),0 0 90px rgba(255,43,214,.28)}
+#c{display:block;width:100%;height:100%}
+.scan{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.05) 0 1px,transparent 1px 3px)}
+
+/* ---------- Screens ---------- */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2.2vmin,18px);
+  padding:14px;text-align:center;background:rgba(10,3,30,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  transition:opacity .35s,visibility .35s}
+.screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.eyebrow{font-size:clamp(10px,2.4vmin,13px);letter-spacing:.4em;color:var(--cyan);text-shadow:0 0 10px var(--cyan);font-weight:700}
+.title{margin:0;display:flex;flex-direction:column;line-height:.95;font-size:clamp(40px,11vmin,80px);font-weight:900;font-style:italic;letter-spacing:.05em}
+.t1{color:#fff;text-shadow:0 0 6px #fff,0 0 18px var(--cyan),0 0 42px var(--cyan),0 0 90px var(--cyan);animation:flick 5s infinite}
+.t2{color:#fff;text-shadow:0 0 6px #fff,0 0 18px var(--pink),0 0 42px var(--pink),0 0 90px var(--pink)}
+@keyframes flick{0%,18%,22%,24%,100%{opacity:1}20%,23%{opacity:.45}}
+.over{margin:0;font-size:clamp(30px,8.5vmin,58px);font-weight:900;font-style:italic;letter-spacing:.06em;color:#fff;
+  text-shadow:0 0 6px #fff,0 0 18px #ff2b5e,0 0 42px #ff2b5e,0 0 80px #ff2b5e}
+.final{display:flex;flex-direction:column;align-items:center}
+.final span{font-size:11px;letter-spacing:.3em;color:rgba(255,255,255,.65);font-weight:700}
+.final b{font-size:clamp(34px,10vmin,60px);font-weight:900;text-shadow:0 0 16px var(--cyan);font-variant-numeric:tabular-nums}
+.final.small{flex-direction:row;gap:10px;align-items:baseline}
+.final.small b{font-size:20px;text-shadow:0 0 10px var(--pink)}
+.badge{padding:4px 14px;border-radius:999px;font-weight:900;letter-spacing:.2em;font-size:12px;color:#2b1a00;background:var(--gold);
+  box-shadow:0 0 20px var(--gold);animation:pulse2 .8s ease-in-out infinite}
+.badge.hidden{display:none}
+.btn{font:inherit;font-weight:800;letter-spacing:.22em;color:#fff;padding:.85em 2.3em;border:0;border-radius:999px;cursor:pointer;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  box-shadow:0 0 20px rgba(255,43,214,.75),inset 0 0 0 1px rgba(255,255,255,.4);animation:btnp 1.6s ease-in-out infinite;
+  font-size:clamp(14px,3.6vmin,18px)}
+.btn:hover{filter:brightness(1.15)}
+.btn:active{transform:scale(.96)}
+@keyframes btnp{50%{box-shadow:0 0 38px rgba(255,43,214,1),inset 0 0 0 1px rgba(255,255,255,.55)}}
+.hint{margin:0;font-size:clamp(11px,2.6vmin,14px);color:rgba(255,255,255,.7)}
+.hint.touch{display:none}
+@media (hover:none) and (pointer:coarse){.hint.kbd{display:none}.hint.touch{display:block}}
+.legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:clamp(11px,2.5vmin,13px);color:rgba(255,255,255,.82);text-align:left}
+.legend li{display:flex;align-items:center;gap:8px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.dot.gold{background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.dot.shield{background:var(--cyan);box-shadow:0 0 10px var(--cyan);border-radius:3px;transform:rotate(45deg)}
+.dot.pink{background:var(--pink);box-shadow:0 0 10px var(--pink)}
+#stage.small .legend,#stage.small .eyebrow,#stage.small #modeHint{display:none}
+@media (prefers-reduced-motion:reduce){.floor,.t1,.btn,.badge,.chip.shield.on{animation:none}}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true">
+  <div class="sky"></div><div class="sun"></div><div class="floor"></div><div class="fade"></div><div class="vignette"></div>
+</div>
+
+<header id="hud" class="glass">
+  <div class="stat"><span class="lbl">СЧЁТ</span><b id="score">0</b></div>
+  <div class="stat"><span class="lbl" id="bestLbl">РЕКОРД</span><b id="best">0</b></div>
+  <div class="stat combo" id="comboBox"><span class="lbl">КОМБО</span><b id="mult">x1</b><i class="bar"><u id="comboBar"></u></i></div>
+  <div class="stat"><span class="lbl">БОНУСЫ</span>
+    <div class="chips">
+      <span class="chip gold" id="goldChip">★ ×2<em id="goldT"></em></span>
+      <span class="chip shield" id="shieldChip">⛨ ЩИТ</span>
+    </div>
+  </div>
+  <div class="ibtns">
+    <button class="ib" id="pauseBtn" tabindex="-1" aria-label="Пауза">⏸</button>
+    <button class="ib" id="muteBtn" tabindex="-1" aria-label="Звук">🔊</button>
+  </div>
+  <div class="modes" role="group" aria-label="Режим игры">
+    <button class="mode on" id="modeHuman" tabindex="-1" aria-pressed="true">🎮 Играть самому</button>
+    <button class="mode" id="modeAI" tabindex="-1" aria-pressed="false">🤖 Смотреть за ИИ</button>
+  </div>
+</header>
+
+<main id="main">
+  <div id="stage">
+    <canvas id="c" aria-label="Игровое поле"></canvas>
+    <div class="scan"></div>
+
+    <section class="screen" id="startScreen">
+      <div class="eyebrow">★ SYNTHWAVE EDITION ★</div>
+      <h1 class="title"><span class="t1">NEON</span><span class="t2">SNAKE</span></h1>
+      <button class="btn" id="playBtn" tabindex="-1">ИГРАТЬ</button>
+      <p class="hint kbd">Стрелки / WASD · P — пауза · M — звук · Пробел — старт</p>
+      <p class="hint touch">Свайпайте по экрану, чтобы поворачивать</p>
+      <p class="hint" id="modeHint"></p>
+      <ul class="legend">
+        <li><i class="dot gold"></i>Золотое яблоко: очки ×2 на 10 секунд</li>
+        <li><i class="dot shield"></i>Щит: переживи одно столкновение</li>
+        <li><i class="dot pink"></i>Ешь быстро — растёт множитель комбо</li>
+      </ul>
+    </section>
+
+    <section class="screen hidden" id="pauseScreen">
+      <h2 class="over" style="text-shadow:0 0 6px #fff,0 0 18px var(--cyan),0 0 42px var(--cyan)">ПАУЗА</h2>
+      <button class="btn" id="resumeBtn" tabindex="-1">ПРОДОЛЖИТЬ</button>
+      <p class="hint kbd">P или Esc — продолжить</p>
+    </section>
+
+    <section class="screen hidden" id="overScreen">
+      <h2 class="over">GAME OVER</h2>
+      <div class="final"><span>СЧЁТ</span><b id="fScore">0</b></div>
+      <div class="badge hidden" id="newRec">★ НОВЫЙ РЕКОРД ★</div>
+      <div class="final small"><span>РЕКОРД</span><b id="fBest">0</b></div>
+      <button class="btn" id="againBtn" tabindex="-1">ЕЩЁ РАЗ</button>
+      <p class="hint kbd">или нажми Пробел</p>
+      <p class="hint" id="aiHint" hidden>ИИ начнёт новую партию сам…</p>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= Config ================= */
+const N = 22;                 // размер поля в клетках
+const BASE_INTERVAL = 135;    // мс на шаг в начале
+const MIN_INTERVAL = 58;      // предел скорости
+const SPEED_STEP = 3;         // ускорение за каждую еду
+const GOLD_TIME = 10000;
+const PU_LIFE = 9000;
+const AI_SPEED = 0.85;        // в режиме ИИ шаг короче (игра чуть быстрее)
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= DOM ================= */
+const $ = id => document.getElementById(id);
+const canvas = $('c'), ctx = canvas.getContext('2d');
+const stage = $('stage'), main = $('main'), hud = $('hud');
+const startScreen = $('startScreen'), overScreen = $('overScreen'), pauseScreen = $('pauseScreen');
+const elScore = $('score'), elBest = $('best'), elMult = $('mult'), elComboBar = $('comboBar'), elComboBox = $('comboBox');
+const goldChip = $('goldChip'), goldT = $('goldT'), shieldChip = $('shieldChip');
+const muteBtn = $('muteBtn'), pauseBtn = $('pauseBtn');
+
+/* ================= Helpers ================= */
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[(Math.random() * arr.length) | 0];
+const TAU = Math.PI * 2;
+const show = el => el.classList.remove('hidden');
+const hide = el => el.classList.add('hidden');
+
+/* ================= State ================= */
+let best = 0;
+let initialMode = 'human';
+try { if (localStorage.getItem('neonSnakeMode') === 'ai') initialMode = 'ai'; } catch (e) {}
+// у человека и у ИИ — отдельные рекорды
+const bestKey = m => (m === 'ai' ? 'neonSnakeBestAI' : 'neonSnakeBest');
+function loadBest(m) {
+  best = 0;
+  try { best = parseInt(localStorage.getItem(bestKey(m)) || '0', 10) || 0; } catch (e) {}
+}
+loadBest(initialMode);
+
+const S = {
+  state: 'ready',            // ready | playing | paused | dying | over
+  snake: [], prev: [], dir: { x: 1, y: 0 }, queue: [],
+  acc: 0, interval: BASE_INTERVAL,
+  score: 0, startBest: 0, newRecord: false, eaten: 0,
+  combo: 0, comboT: 0, comboMax: 2500,
+  gold: 0, shield: false, ghost: 0,
+  food: null, pu: null, puSpawn: 8000,
+  shake: 0, dyingT: 0,
+  mode: initialMode,         // 'human' | 'ai'
+  aiPath: [], aiStall: 0, overT: 0   // путь, найденный ботом (для подсветки), таймер автоперезапуска
+};
+
+// Интервал между шагами: растёт скорость с каждой едой; у ИИ немного быстрее
+function calcInterval() {
+  const base = Math.max(MIN_INTERVAL, BASE_INTERVAL - S.eaten * SPEED_STEP);
+  return S.mode === 'ai' ? Math.max(45, base * AI_SPEED) : base;
+}
+const particles = [];
+const texts = [];
+
+/* ================= Canvas sizing ================= */
+let cell = 20, dpr = 1, W = 440;
+function fit() {
+  dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const cs = getComputedStyle(main);
+  const aw = main.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const ah = main.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const size = Math.max(180, Math.floor(Math.min(aw, ah)));
+  cell = Math.max(8, Math.floor(size * dpr / N));
+  W = cell * N;
+  if (canvas.width !== W) { canvas.width = W; canvas.height = W; }
+  const css = W / dpr;
+  stage.style.width = css + 'px';
+  stage.style.height = css + 'px';
+  stage.classList.toggle('small', css < 430);
+  hud.style.width = Math.max(css, 280) + 'px';
+}
+window.addEventListener('resize', fit);
+window.addEventListener('orientationchange', () => setTimeout(fit, 120));
+if (window.ResizeObserver) new ResizeObserver(fit).observe(main);
+
+/* ================= Audio (Web Audio API) ================= */
+let AC = null, master = null, muted = false;
+try { muted = localStorage.getItem('neonSnakeMute') === '1'; } catch (e) {}
+function updateMuteBtn() { muteBtn.textContent = muted ? '🔇' : '🔊'; }
+function audioInit() {
+  if (!AC) {
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      master = AC.createGain();
+      master.gain.value = muted ? 0 : 0.3;
+      master.connect(AC.destination);
+    } catch (e) { AC = null; }
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+}
+function toggleMute() {
+  muted = !muted;
+  try { localStorage.setItem('neonSnakeMute', muted ? '1' : '0'); } catch (e) {}
+  if (master) master.gain.value = muted ? 0 : 0.3;
+  updateMuteBtn();
+}
+function tone(f0, f1, dur, type, vol, delay) {
+  if (!AC || muted) return;
+  const t = AC.currentTime + (delay || 0);
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type || 'square';
+  o.frequency.setValueAtTime(f0, t);
+  if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(master);
+  o.start(t); o.stop(t + dur + 0.03);
+}
+function noise(dur, vol, freq, delay) {
+  if (!AC || muted) return;
+  const t = AC.currentTime + (delay || 0);
+  const len = Math.max(1, Math.floor(AC.sampleRate * dur));
+  const buf = AC.createBuffer(1, len, AC.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = AC.createBufferSource(); src.buffer = buf;
+  const f = AC.createBiquadFilter(); f.type = 'lowpass';
+  f.frequency.setValueAtTime(freq, t);
+  f.frequency.exponentialRampToValueAtTime(80, t + dur);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f); f.connect(g); g.connect(master);
+  src.start(t); src.stop(t + dur + 0.02);
+}
+const sfx = {
+  turn() { tone(320, 210, 0.045, 'triangle', 0.09); },
+  eat(combo) {
+    const scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+    const f = 392 * Math.pow(2, scale[Math.min(combo - 1, scale.length - 1)] / 12);
+    tone(f, f * 2, 0.09, 'square', 0.14);
+    tone(f * 1.5, f * 3, 0.1, 'square', 0.09, 0.06);
+  },
+  power() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f * 1.02, 0.12, 'square', 0.13, i * 0.06)); },
+  shield() { noise(0.28, 0.35, 2600); tone(900, 140, 0.28, 'sawtooth', 0.15); },
+  death() {
+    tone(440, 38, 0.8, 'sawtooth', 0.26);
+    tone(220, 30, 0.9, 'square', 0.15, 0.08);
+    noise(0.7, 0.4, 1200);
+  },
+  start() { [330, 440, 660].forEach((f, i) => tone(f, f * 1.01, 0.1, 'triangle', 0.14, i * 0.07)); }
+};
+
+/* ================= Game logic ================= */
+function freeCell() {
+  const occ = new Set();
+  for (const s of S.snake) occ.add(s.y * N + s.x);
+  if (S.food) occ.add(S.food.y * N + S.food.x);
+  if (S.pu) occ.add(S.pu.y * N + S.pu.x);
+  const list = [];
+  for (let i = 0; i < N * N; i++) if (!occ.has(i)) list.push(i);
+  if (!list.length) return null;
+  const k = pick(list);
+  return { x: k % N, y: (k / N) | 0 };
+}
+function placeFood() { S.food = null; S.food = freeCell(); }
+
+function reset() {
+  S.snake = [];
+  const sy = N >> 1;
+  for (let i = 0; i < 4; i++) S.snake.push({ x: 8 - i, y: sy });
+  S.prev = S.snake.slice();
+  S.dir = { x: 1, y: 0 }; S.queue = [];
+  S.acc = 0; S.aiPath = []; S.aiStall = 0; S.overT = 0;
+  S.score = 0; S.eaten = 0; S.combo = 0; S.comboT = 0; S.comboMax = 2500;
+  S.interval = calcInterval();
+  S.gold = 0; S.shield = false; S.ghost = 0;
+  S.pu = null; S.puSpawn = rnd(6000, 10000);
+  S.startBest = best; S.newRecord = false;
+  S.shake = 0; S.dyingT = 0;
+  particles.length = 0; texts.length = 0;
+  placeFood();
+}
+
+function start() {
+  if (S.state === 'playing' || S.state === 'dying' || S.state === 'paused') return;
+  audioInit();
+  reset();
+  S.state = 'playing';
+  hide(startScreen); hide(overScreen); hide(pauseScreen);
+  sfx.start();
+}
+function pause() {
+  if (S.state !== 'playing') return;
+  S.state = 'paused'; show(pauseScreen);
+}
+function resume() {
+  if (S.state !== 'paused') return;
+  S.state = 'playing'; hide(pauseScreen);
+}
+
+function enqueue(d) {
+  if (S.state !== 'playing' || S.mode === 'ai') return;   // в режиме ИИ ввод игрока игнорируется
+  const last = S.queue.length ? S.queue[S.queue.length - 1] : S.dir;
+  if (d.x === last.x && d.y === last.y) return;
+  if (d.x === -last.x && d.y === -last.y) return;
+  if (S.queue.length < 2) { S.queue.push(d); sfx.turn(); }
+}
+
+const comboMult = () => Math.min(8, 1 + Math.floor(S.combo / 2));
+
+function burst(gx, gy, n, hues, speed) {
+  for (let i = 0; i < n; i++) {
+    const a = rnd(0, TAU), s = rnd(0.25, 1) * speed, life = rnd(0.45, 0.95);
+    particles.push({ x: gx + 0.5, y: gy + 0.5, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      life, max: life, size: rnd(0.05, 0.15), hue: pick(hues) });
+  }
+}
+function floatText(gx, gy, text, color) {
+  texts.push({ x: gx + 0.5, y: gy + 0.2, text, color, life: 0.9, max: 0.9 });
+}
+
+function eat(x, y) {
+  S.combo = S.comboT > 0 ? S.combo + 1 : 1;
+  S.eaten++;
+  S.interval = calcInterval();
+  S.comboMax = Math.max(2200, S.interval * 18);
+  S.comboT = S.comboMax;
+  const mult = comboMult();
+  const pts = 10 * mult * (S.gold > 0 ? 2 : 1);
+  S.score += pts;
+  burst(x, y, 20, S.gold > 0 ? [45, 38, 55] : [320, 300, 185], 6.5);
+  floatText(x, y, '+' + pts, S.gold > 0 ? '#ffd23f' : (mult > 1 ? '#19f6ff' : '#ffffff'));
+  sfx.eat(S.combo);
+  placeFood();
+  if (!S.food) die();
+}
+
+function spawnPU() {
+  const type = S.shield ? 'gold' : (Math.random() < 0.5 ? 'gold' : 'shield');
+  const c = freeCell();
+  if (c) S.pu = { x: c.x, y: c.y, type, life: PU_LIFE };
+  else S.puSpawn = 4000;
+}
+function pickup() {
+  const p = S.pu;
+  if (p.type === 'gold') { S.gold = GOLD_TIME; burst(p.x, p.y, 30, [48, 40, 55], 8); floatText(p.x, p.y, '×2 ★', '#ffd23f'); }
+  else { S.shield = true; burst(p.x, p.y, 30, [180, 190, 200], 8); floatText(p.x, p.y, 'ЩИТ', '#19f6ff'); }
+  sfx.power();
+  S.pu = null;
+  S.puSpawn = rnd(8000, 14000);
+}
+function shieldBreak(x, y) {
+  burst(x, y, 36, [180, 195, 210], 9);
+  floatText(x, y, 'ЩИТ!', '#19f6ff');
+  S.shake = Math.max(S.shake, 7);
+  sfx.shield();
+}
+
+function die() {
+  if (S.state === 'dying' || S.state === 'over') return;
+  S.state = 'dying'; S.dyingT = 0; S.shake = 20;
+  sfx.death();
+  for (const s of S.snake) burst(s.x, s.y, 3, [350, 15, 320, 185], 7);
+  S.newRecord = S.score > S.startBest && S.score > 0;
+  if (S.score > best) {
+    best = S.score;
+    try { localStorage.setItem(bestKey(S.mode), String(best)); } catch (e) {}
+  }
+}
+function showOver() {
+  S.state = 'over'; S.overT = 0;
+  $('fScore').textContent = S.score;
+  $('fBest').textContent = best;
+  $('newRec').classList.toggle('hidden', !S.newRecord);
+  show(overScreen);
+}
+
+function step() {
+  // направление: в режиме ИИ его выбирает бот, иначе берём команду из очереди игрока
+  if (S.mode === 'ai') S.dir = aiNextDir();
+  else if (S.queue.length) S.dir = S.queue.shift();
+  const h = S.snake[0];
+  let nx = h.x + S.dir.x, ny = h.y + S.dir.y;
+
+  if (nx < 0 || ny < 0 || nx >= N || ny >= N) {
+    if (S.shield) {
+      S.shield = false;
+      nx = (nx + N) % N; ny = (ny + N) % N;
+      S.ghost = 3;
+      shieldBreak(nx, ny);
+    } else { die(); return; }
+  }
+
+  const grow = !!S.food && S.food.x === nx && S.food.y === ny;
+  if (S.ghost <= 0) {
+    const lim = S.snake.length - (grow ? 0 : 1);
+    for (let i = 0; i < lim; i++) {
+      const s = S.snake[i];
+      if (s.x === nx && s.y === ny) {
+        if (S.shield) { S.shield = false; S.ghost = 4; shieldBreak(nx, ny); break; }
+        die(); return;
+      }
+    }
+  }
+
+  const old = S.snake;
+  const ns = [{ x: nx, y: ny }].concat(old);
+  if (!grow) ns.pop();
+  S.prev = ns.map((_, i) => old[Math.min(i, old.length - 1)]);
+  S.snake = ns;
+
+  if (grow) eat(nx, ny);
+  if (S.state === 'playing' && S.pu && S.pu.x === nx && S.pu.y === ny) pickup();
+  if (S.ghost > 0) S.ghost--;
+}
+
+function update(dt) {
+  const ds = dt / 1000;
+  // эффекты живут всегда
+  S.shake *= Math.exp(-dt / 160);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life -= ds;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    const drag = Math.exp(-2.6 * ds);
+    p.vx *= drag; p.vy *= drag;
+    p.x += p.vx * ds; p.y += p.vy * ds;
+  }
+  for (let i = texts.length - 1; i >= 0; i--) {
+    const t = texts[i];
+    t.life -= ds; t.y -= ds * 1.1;
+    if (t.life <= 0) texts.splice(i, 1);
+  }
+
+  if (S.state === 'dying') {
+    S.dyingT += dt;
+    if (S.dyingT >= 900) showOver();
+    return;
+  }
+  if (S.state === 'over' && S.mode === 'ai') {   // ИИ сам начинает новую партию
+    S.overT += dt;
+    if (S.overT >= 2500) start();
+    return;
+  }
+  if (S.state !== 'playing') return;
+
+  if (S.comboT > 0) { S.comboT -= dt; if (S.comboT <= 0) { S.comboT = 0; S.combo = 0; } }
+  if (S.gold > 0) S.gold = Math.max(0, S.gold - dt);
+  if (S.pu) {
+    S.pu.life -= dt;
+    if (S.pu.life <= 0) { S.pu = null; S.puSpawn = rnd(6000, 10000); }
+  } else {
+    S.puSpawn -= dt;
+    if (S.puSpawn <= 0) spawnPU();
+  }
+
+  S.acc += dt;
+  let guard = 0;
+  while (S.acc >= S.interval && S.state === 'playing' && guard++ < 5) {
+    step();
+    S.acc -= S.interval;
+  }
+  if (guard >= 5) S.acc = 0;
+}
+
+/* ================= AI bot (A* pathfinding) =================
+ *
+ * Как думает бот на КАЖДОМ шаге игры:
+ *
+ *  1. Ищет алгоритмом A* кратчайший путь от головы до цели (еда, а если
+ *     пауэр-ап рядом — то сначала он).
+ *  2. Проверка безопасности. Просто «бежать к еде» опасно: змейка может
+ *     загнать себя в тупик. Поэтому бот мысленно проигрывает весь путь и
+ *     смотрит, останется ли после съедания еды путь от головы к хвосту.
+ *     Пока хвост достижим — змейка не в ловушке (хвост всегда освобождается).
+ *  3. Если путь к цели небезопасен или его нет — бот «идёт за хвостом»
+ *     (ещё один A*, но уже до своего хвоста): так змейка кружит по полю,
+ *     пока не освободится безопасная дорога к еде.
+ *  4. Если и хвост недостижим — выбирает соседнюю клетку, из которой
+ *     открывается наибольшая свободная область (flood fill).
+ *
+ * Стены для бота всегда непроходимы (щит бот не использует осознанно).
+ */
+const DIR4 = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }];
+const inBounds = (x, y) => x >= 0 && y >= 0 && x < N && y < N;
+
+/*
+ * A* (A-star) — поиск кратчайшего пути на сетке.
+ *
+ * Идея: для каждой клетки считаем
+ *     f = g + h,
+ *   где g — сколько шагов УЖЕ прошли от головы до этой клетки,
+ *       h — эвристика: оценка оставшегося пути до цели (манхэттенское
+ *           расстояние |dx| + |dy|; на сетке с ходами в 4 стороны оно
+ *           никогда не завышает реальную длину, поэтому A* находит
+ *           именно кратчайший путь).
+ * Алгоритм хранит «открытый список» клеток-кандидатов и каждый раз
+ * раскрывает клетку с минимальным f — то есть ту, что выглядит самой
+ * перспективной. В отличие от BFS, он не расползается кругами во все
+ * стороны, а целенаправленно тянется к цели.
+ *
+ * Особенность змейки: тело движется. Клетка тела с индексом i (0 — голова)
+ * освободится через (длина − i) ходов. Поэтому шаг в такую клетку на ходу
+ * номер g разрешён, только если g >= freeAt[клетка]. Так бот может смело
+ * идти «вдогонку» за собственным хвостом.
+ *
+ * Возвращает массив клеток пути (без головы, последняя — цель),
+ * [] если голова уже в цели, или null, если пути нет.
+ */
+function astar(snake, tx, ty) {
+  const total = N * N, len = snake.length;
+  const freeAt = new Int16Array(total);                       // 0 — клетка свободна сейчас
+  for (let i = 0; i < len; i++) freeAt[snake[i].y * N + snake[i].x] = len - i;
+
+  const start = snake[0].y * N + snake[0].x, goal = ty * N + tx;
+  if (start === goal) return [];
+
+  const h = (x, y) => Math.abs(x - tx) + Math.abs(y - ty);    // эвристика
+  const g = new Int16Array(total).fill(-1);                   // лучшая известная длина пути; -1 = не посещена
+  const f = new Int16Array(total);                            // f = g + h
+  const parent = new Int16Array(total).fill(-1);              // откуда пришли (для восстановления пути)
+  const closed = new Uint8Array(total);                       // клетка уже раскрыта
+  const inOpen = new Uint8Array(total);
+  const open = [start];                                       // открытый список
+  g[start] = 0; f[start] = h(snake[0].x, snake[0].y); inOpen[start] = 1;
+
+  while (open.length) {
+    // 1) берём из открытого списка клетку с наименьшим f
+    let bi = 0;
+    for (let i = 1; i < open.length; i++) if (f[open[i]] < f[open[bi]]) bi = i;
+    const cur = open[bi];
+    open[bi] = open[open.length - 1]; open.pop(); inOpen[cur] = 0;
+
+    // 2) дошли до цели — восстанавливаем путь по цепочке parent
+    if (cur === goal) {
+      const path = [];
+      for (let c = goal; c !== start; c = parent[c]) path.push({ x: c % N, y: (c / N) | 0 });
+      return path.reverse();
+    }
+    closed[cur] = 1;
+
+    // 3) просматриваем 4 соседей
+    const cx = cur % N, cy = (cur / N) | 0;
+    for (const d of DIR4) {
+      const nx = cx + d.x, ny = cy + d.y;
+      if (!inBounds(nx, ny)) continue;                        // стена
+      const ni = ny * N + nx;
+      if (closed[ni]) continue;
+      const ng = g[cur] + 1;                                  // сколько шагов будет до соседа
+      if (ng < freeAt[ni]) continue;                          // там ещё тело змейки
+      if (g[ni] !== -1 && ng >= g[ni]) continue;              // уже знаем путь не хуже
+      g[ni] = ng; parent[ni] = cur; f[ni] = ng + h(nx, ny);
+      if (!inOpen[ni]) { open.push(ni); inOpen[ni] = 1; }
+    }
+  }
+  return null;                                                // открытый список пуст — пути нет
+}
+
+// Мысленно проходим путь: новая голова спереди, хвост убираем (если на конце пути
+// съедаем еду — хвост остаётся, змейка вырастает). Реальную игру не трогаем.
+function simulate(snake, path, eatAtEnd) {
+  const s = snake.slice();
+  for (let i = 0; i < path.length; i++) {
+    s.unshift({ x: path[i].x, y: path[i].y });
+    if (!(eatAtEnd && i === path.length - 1)) s.pop();
+  }
+  return s;
+}
+
+// Свободные клетки для обхода «в ширину»: всё тело, кроме хвоста, занято
+// (хвост на следующем ходу уйдёт, поэтому его считаем свободным).
+function bodyBlocked(snake) {
+  const blocked = new Uint8Array(N * N);
+  for (let i = 0; i < snake.length - 1; i++) blocked[snake[i].y * N + snake[i].x] = 1;
+  return blocked;
+}
+
+// Проверка «не в ловушке ли змейка»: есть ли путь от головы до хвоста (BFS).
+function canReachTail(snake) {
+  const blocked = bodyBlocked(snake);
+  const tail = snake[snake.length - 1], goal = tail.y * N + tail.x;
+  const seen = new Uint8Array(N * N), queue = [snake[0].y * N + snake[0].x];
+  seen[queue[0]] = 1;
+  for (let qi = 0; qi < queue.length; qi++) {
+    const cur = queue[qi];
+    if (cur === goal) return true;
+    const cx = cur % N, cy = (cur / N) | 0;
+    for (const d of DIR4) {
+      const nx = cx + d.x, ny = cy + d.y;
+      if (!inBounds(nx, ny)) continue;
+      const ni = ny * N + nx;
+      if (seen[ni] || blocked[ni]) continue;
+      seen[ni] = 1; queue.push(ni);
+    }
+  }
+  return false;
+}
+
+// Размер свободной области, доступной из клетки (flood fill) — запасной вариант выбора хода.
+function floodCount(snake, sx, sy) {
+  const blocked = bodyBlocked(snake);
+  const seen = new Uint8Array(N * N), stack = [sy * N + sx];
+  seen[stack[0]] = 1;
+  let count = 0;
+  while (stack.length) {
+    const cur = stack.pop(); count++;
+    const cx = cur % N, cy = (cur / N) | 0;
+    for (const d of DIR4) {
+      const nx = cx + d.x, ny = cy + d.y;
+      if (!inBounds(nx, ny)) continue;
+      const ni = ny * N + nx;
+      if (seen[ni] || blocked[ni]) continue;
+      seen[ni] = 1; stack.push(ni);
+    }
+  }
+  return count;
+}
+
+const dirTo = (from, to) => ({ x: to.x - from.x, y: to.y - from.y });
+
+// Главная функция бота: возвращает направление следующего шага.
+function aiNextDir() {
+  const snake = S.snake, head = snake[0];
+  S.aiPath = [];
+  const isFood = c => !!S.food && S.food.x === c.x && S.food.y === c.y;
+
+  // Шаг 1–2: путь к цели + проверка безопасности. Пауэр-ап берём, только если он близко.
+  // Если бот слишком долго кружит (aiStall), проверку смягчаем: достаточно, чтобы после
+  // съедания еды вокруг головы хватало свободного места для всей змейки.
+  const targets = [];
+  if (S.pu) targets.push({ c: S.pu, eat: false });
+  if (S.food) targets.push({ c: S.food, eat: true });
+  for (const t of targets) {
+    const path = astar(snake, t.c.x, t.c.y);
+    if (!path || !path.length) continue;
+    if (!t.eat && path.length > 10) continue;
+    const after = simulate(snake, path, t.eat);
+    const safe = canReachTail(after) ||
+      (S.aiStall > 40 && floodCount(after, after[0].x, after[0].y) >= after.length + 2);
+    if (safe) {
+      S.aiStall = 0;
+      S.aiPath = path;
+      return dirTo(head, path[0]);
+    }
+  }
+  S.aiStall = (S.aiStall || 0) + 1;
+
+  // Шаг 3: безопасного пути к цели нет — идём за собственным хвостом
+  // (если первый шаг этого пути не загоняет нас в тупик).
+  const tail = snake[snake.length - 1];
+  const tp = astar(snake, tail.x, tail.y);
+  if (tp && tp.length && canReachTail(simulate(snake, [tp[0]], isFood(tp[0])))) {
+    S.aiPath = tp;
+    return dirTo(head, tp[0]);
+  }
+
+  // Шаг 4: среди ходов, после которых хвост всё ещё достижим, берём тот,
+  // что оставляет больше всего свободного места (flood fill).
+  const blocked = bodyBlocked(snake);
+  let bestDir = null, bestArea = -1;
+  for (const d of DIR4) {
+    const nx = head.x + d.x, ny = head.y + d.y;
+    if (!inBounds(nx, ny) || blocked[ny * N + nx]) continue;
+    const after = simulate(snake, [{ x: nx, y: ny }], isFood({ x: nx, y: ny }));
+    if (!canReachTail(after)) continue;
+    const area = floodCount(after, nx, ny);
+    if (area > bestArea) { bestArea = area; bestDir = d; }
+  }
+  if (bestDir) return bestDir;
+
+  // Шаг 5: совсем тесно — любой свободный ход с наибольшей областью.
+  for (const d of DIR4) {
+    const nx = head.x + d.x, ny = head.y + d.y;
+    if (!inBounds(nx, ny) || blocked[ny * N + nx]) continue;
+    const area = floodCount(snake, nx, ny);
+    if (area > bestArea) { bestArea = area; bestDir = d; }
+  }
+  return bestDir || S.dir;   // деваться некуда — продолжаем прямо
+}
+
+/* ================= Rendering ================= */
+function orb(gx, gy, r, fill, glow) {
+  ctx.shadowColor = glow; ctx.shadowBlur = cell * 0.95;
+  ctx.fillStyle = fill;
+  ctx.beginPath(); ctx.arc(gx * cell, gy * cell, r * cell, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,.75)';
+  ctx.beginPath(); ctx.arc((gx - 0.1) * cell, (gy - 0.1) * cell, r * cell * 0.28, 0, TAU); ctx.fill();
+}
+
+function snakePoints() {
+  const t = Math.min(1, S.acc / S.interval);
+  return S.snake.map((s, i) => {
+    const p = S.prev[i] || s;
+    const dx = s.x - p.x, dy = s.y - p.y;
+    if (Math.abs(dx) > 1.5 || Math.abs(dy) > 1.5) return { x: s.x + 0.5, y: s.y + 0.5 };
+    return { x: p.x + dx * t + 0.5, y: p.y + dy * t + 0.5 };
+  });
+}
+
+function draw(t) {
+  const c = ctx;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalAlpha = 1; c.globalCompositeOperation = 'source-over'; c.shadowBlur = 0;
+  c.clearRect(0, 0, W, W);
+
+  let ox = 0, oy = 0;
+  if (S.shake > 0.2) {
+    const m = S.shake * dpr * (reduceMotion ? 0.25 : 1);
+    ox = (Math.random() * 2 - 1) * m; oy = (Math.random() * 2 - 1) * m;
+  }
+  c.setTransform(1, 0, 0, 1, ox, oy);
+
+  // фон
+  const g = c.createRadialGradient(W / 2, W / 2, W * 0.1, W / 2, W / 2, W * 0.78);
+  g.addColorStop(0, '#1b0942'); g.addColorStop(1, '#070218');
+  c.fillStyle = g; c.fillRect(-W * 0.05, -W * 0.05, W * 1.1, W * 1.1);
+
+  // сетка
+  c.lineWidth = 1;
+  c.strokeStyle = 'rgba(122,92,255,.14)';
+  c.beginPath();
+  for (let i = 0; i <= N; i++) {
+    c.moveTo(i * cell + 0.5, 0); c.lineTo(i * cell + 0.5, W);
+    c.moveTo(0, i * cell + 0.5); c.lineTo(W, i * cell + 0.5);
+  }
+  c.stroke();
+
+  // граница при щите
+  if (S.shield) {
+    c.save();
+    c.strokeStyle = 'rgba(25,246,255,' + (0.45 + 0.3 * Math.sin(t * 6)) + ')';
+    c.lineWidth = cell * 0.14; c.shadowColor = '#19f6ff'; c.shadowBlur = cell * 0.8;
+    c.strokeRect(cell * 0.07, cell * 0.07, W - cell * 0.14, W - cell * 0.14);
+    c.restore();
+  }
+
+  // еда
+  if (S.food) {
+    const p = 1 + 0.1 * Math.sin(t * 7);
+    orb(S.food.x + 0.5, S.food.y + 0.5, 0.34 * p, '#ff4fd8', '#ff2bd6');
+  }
+
+  // пауэр-ап
+  if (S.pu && (S.pu.life > 3000 || Math.floor(S.pu.life / 160) % 2 === 0)) {
+    const cx = S.pu.x + 0.5, cy = S.pu.y + 0.5;
+    if (S.pu.type === 'gold') {
+      const p = 1 + 0.08 * Math.sin(t * 8);
+      orb(cx, cy, 0.4 * p, '#ffd23f', '#ffb300');
+      c.fillStyle = '#fff6c2';
+      for (let k = 0; k < 3; k++) {
+        const a = t * 3 + k * (TAU / 3);
+        c.beginPath(); c.arc((cx + Math.cos(a) * 0.55) * cell, (cy + Math.sin(a) * 0.55) * cell, cell * 0.06, 0, TAU); c.fill();
+      }
+    } else {
+      c.save();
+      c.translate(cx * cell, cy * cell); c.rotate(t * 1.5);
+      c.shadowColor = '#19f6ff'; c.shadowBlur = cell * 0.9;
+      c.strokeStyle = '#19f6ff'; c.lineWidth = cell * 0.1;
+      c.fillStyle = 'rgba(25,246,255,.25)';
+      c.beginPath();
+      for (let k = 0; k < 6; k++) {
+        const a = k * (TAU / 6), r = cell * 0.44;
+        k ? c.lineTo(Math.cos(a) * r, Math.sin(a) * r) : c.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      c.closePath(); c.fill(); c.stroke();
+      c.restore();
+    }
+  }
+
+  // путь, который сейчас «видит» ИИ (точки до цели)
+  if (S.mode === 'ai' && S.state === 'playing' && S.aiPath.length) {
+    c.fillStyle = 'rgba(25,246,255,.45)';
+    for (const p of S.aiPath) {
+      c.beginPath(); c.arc((p.x + 0.5) * cell, (p.y + 0.5) * cell, cell * 0.1, 0, TAU); c.fill();
+    }
+  }
+
+  // змейка
+  if (S.snake.length) {
+    const pts = snakePoints();
+    const n = pts.length;
+    const dying = S.state === 'dying';
+    const goldMode = S.gold > 0;
+    const flashRed = dying && Math.floor(S.dyingT / 90) % 2 === 0;
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    if (S.ghost > 0) c.globalAlpha = 0.6;
+
+    const colorAt = i => {
+      const k = n > 1 ? i / (n - 1) : 0;
+      if (dying) return flashRed ? 'hsl(350,100%,60%)' : 'hsl(20,100%,60%)';
+      const hue = goldMode ? 48 - k * 28 : 182 + k * 128;
+      return 'hsl(' + hue + ',100%,' + (62 - k * 8) + '%)';
+    };
+    for (let i = n - 2; i >= 0; i--) {
+      const a = pts[i], b = pts[i + 1];
+      if (Math.abs(a.x - b.x) > 1.6 || Math.abs(a.y - b.y) > 1.6) continue;
+      const col = colorAt(i);
+      c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = cell * 0.65;
+      c.lineWidth = cell * (0.8 - 0.28 * (i / Math.max(1, n - 1)));
+      c.beginPath(); c.moveTo(a.x * cell, a.y * cell); c.lineTo(b.x * cell, b.y * cell); c.stroke();
+    }
+    // голова
+    const hp = pts[0], hc = colorAt(0);
+    c.shadowColor = hc; c.shadowBlur = cell * 0.8; c.fillStyle = hc;
+    c.beginPath(); c.arc(hp.x * cell, hp.y * cell, cell * 0.47, 0, TAU); c.fill();
+    c.shadowBlur = 0;
+    const d = S.dir, px = -d.y, py = d.x;
+    for (const sgn of [-1, 1]) {
+      const ex = (hp.x + d.x * 0.14 + px * 0.2 * sgn) * cell, ey = (hp.y + d.y * 0.14 + py * 0.2 * sgn) * cell;
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey, cell * 0.11, 0, TAU); c.fill();
+      c.fillStyle = '#12002b'; c.beginPath(); c.arc(ex + d.x * cell * 0.04, ey + d.y * cell * 0.04, cell * 0.055, 0, TAU); c.fill();
+    }
+    c.globalAlpha = 1;
+    // кольцо щита
+    if (S.shield) {
+      c.strokeStyle = 'rgba(25,246,255,' + (0.6 + 0.35 * Math.sin(t * 9)) + ')';
+      c.lineWidth = cell * 0.09; c.shadowColor = '#19f6ff'; c.shadowBlur = cell * 0.7;
+      c.beginPath(); c.arc(hp.x * cell, hp.y * cell, cell * 0.76, 0, TAU); c.stroke();
+      c.shadowBlur = 0;
+    }
+  }
+
+  // частицы
+  c.globalCompositeOperation = 'lighter';
+  for (const p of particles) {
+    const a = Math.max(0, p.life / p.max);
+    c.fillStyle = 'hsla(' + p.hue + ',100%,60%,' + a.toFixed(3) + ')';
+    c.beginPath(); c.arc(p.x * cell, p.y * cell, Math.max(0.5, p.size * cell * (0.5 + a)), 0, TAU); c.fill();
+  }
+  c.globalCompositeOperation = 'source-over';
+
+  // всплывающие очки
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = '800 ' + Math.round(cell * 0.72) + 'px system-ui,sans-serif';
+  for (const tx of texts) {
+    c.globalAlpha = Math.max(0, Math.min(1, tx.life / tx.max * 1.5));
+    c.fillStyle = tx.color; c.shadowColor = tx.color; c.shadowBlur = cell * 0.5;
+    c.fillText(tx.text, tx.x * cell, tx.y * cell);
+  }
+  c.globalAlpha = 1; c.shadowBlur = 0;
+}
+
+/* ================= HUD ================= */
+const cache = {};
+function setText(key, el, v) {
+  if (cache[key] !== v) {
+    cache[key] = v; el.textContent = v;
+    el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  }
+}
+function updateHUD() {
+  setText('score', elScore, String(S.score));
+  setText('best', elBest, String(Math.max(best, S.score)));
+  const mult = S.comboT > 0 ? comboMult() : 1;
+  const mt = 'x' + mult;
+  if (cache.mult !== mt) { cache.mult = mt; elMult.textContent = mt; }
+  const on = S.comboT > 0 && S.combo > 1;
+  if (cache.comboOn !== on) { cache.comboOn = on; elComboBox.classList.toggle('on', on); }
+  elComboBar.style.width = (S.comboT > 0 ? (S.comboT / S.comboMax) * 100 : 0).toFixed(1) + '%';
+
+  const gOn = S.gold > 0;
+  if (cache.gOn !== gOn) { cache.gOn = gOn; goldChip.classList.toggle('on', gOn); }
+  const gt = gOn ? ' ' + (S.gold / 1000).toFixed(1) + 'с' : '';
+  if (cache.gt !== gt) { cache.gt = gt; goldT.textContent = gt; }
+  if (gOn) goldChip.style.setProperty('--p', (S.gold / GOLD_TIME * 100).toFixed(1) + '%');
+  if (cache.sOn !== S.shield) { cache.sOn = S.shield; shieldChip.classList.toggle('on', S.shield); }
+}
+
+/* ================= Main loop ================= */
+let last = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!last) last = now;
+  const dt = Math.min(100, now - last);
+  last = now;
+  update(dt);
+  draw(now / 1000);
+  updateHUD();
+}
+
+/* ================= Input ================= */
+const KEYS = {
+  ArrowUp: { x: 0, y: -1 }, KeyW: { x: 0, y: -1 },
+  ArrowDown: { x: 0, y: 1 }, KeyS: { x: 0, y: 1 },
+  ArrowLeft: { x: -1, y: 0 }, KeyA: { x: -1, y: 0 },
+  ArrowRight: { x: 1, y: 0 }, KeyD: { x: 1, y: 0 }
+};
+window.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const d = KEYS[e.code];
+  if (d) {
+    e.preventDefault(); audioInit();
+    enqueue({ x: d.x, y: d.y });
+    return;
+  }
+  if (e.code === 'Space' || e.code === 'Enter') {
+    e.preventDefault();
+    if (e.repeat) return;
+    audioInit();
+    if (S.state === 'ready' || S.state === 'over') start();
+    else if (S.state === 'paused') resume();
+    return;
+  }
+  if (e.code === 'KeyP' || e.code === 'Escape') {
+    e.preventDefault();
+    if (e.repeat) return;
+    if (S.state === 'playing') pause(); else if (S.state === 'paused') resume();
+    return;
+  }
+  if (e.code === 'KeyM') toggleMute();
+});
+
+// свайпы (по всему экрану)
+let tx = 0, ty = 0, tracking = false;
+const SWIPE_MIN = 22;
+document.addEventListener('touchstart', e => {
+  if (e.target.closest && e.target.closest('button')) return;
+  const t = e.changedTouches[0];
+  tx = t.clientX; ty = t.clientY; tracking = true;
+  audioInit();
+  e.preventDefault();
+}, { passive: false });
+document.addEventListener('touchmove', e => {
+  if (!tracking) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - tx, dy = t.clientY - ty;
+  if (Math.hypot(dx, dy) >= SWIPE_MIN) {
+    if (Math.abs(dx) > Math.abs(dy)) enqueue({ x: dx > 0 ? 1 : -1, y: 0 });
+    else enqueue({ x: 0, y: dy > 0 ? 1 : -1 });
+    tx = t.clientX; ty = t.clientY;
+  }
+  e.preventDefault();
+}, { passive: false });
+const endTouch = () => { tracking = false; };
+document.addEventListener('touchend', endTouch);
+document.addEventListener('touchcancel', endTouch);
+
+// кнопки
+function bindBtn(el, fn) {
+  el.addEventListener('click', e => { e.preventDefault(); audioInit(); fn(); el.blur(); });
+}
+bindBtn($('playBtn'), start);
+bindBtn($('againBtn'), start);
+bindBtn($('resumeBtn'), resume);
+bindBtn(pauseBtn, () => { if (S.state === 'playing') pause(); else if (S.state === 'paused') resume(); });
+bindBtn(muteBtn, toggleMute);
+
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+window.addEventListener('blur', pause);
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ================= Режимы: сам / ИИ ================= */
+const modeHumanBtn = $('modeHuman'), modeAIBtn = $('modeAI'), playBtn = $('playBtn');
+const bestLbl = $('bestLbl'), modeHint = $('modeHint'), aiHint = $('aiHint');
+function applyModeUI() {
+  const ai = S.mode === 'ai';
+  modeHumanBtn.classList.toggle('on', !ai); modeHumanBtn.setAttribute('aria-pressed', String(!ai));
+  modeAIBtn.classList.toggle('on', ai);     modeAIBtn.setAttribute('aria-pressed', String(ai));
+  playBtn.textContent = ai ? 'ЗАПУСТИТЬ ИИ' : 'ИГРАТЬ';
+  bestLbl.textContent = ai ? 'РЕКОРД ИИ' : 'РЕКОРД';
+  modeHint.textContent = ai ? 'ИИ играет сам: путь к еде ищет алгоритм A*' : 'Кнопки сверху переключают режим: играть самому или смотреть за ИИ';
+  aiHint.hidden = !ai;
+}
+function setMode(m) {
+  if (S.mode === m) return;
+  S.mode = m;
+  try { localStorage.setItem('neonSnakeMode', m); } catch (e) {}
+  loadBest(m);
+  applyModeUI();
+  if (S.state === 'ready') { reset(); return; }   // на стартовом экране просто обновляем вид
+  S.state = 'ready'; start();                     // иначе сразу новая партия в выбранном режиме
+}
+bindBtn(modeHumanBtn, () => setMode('human'));
+bindBtn(modeAIBtn, () => setMode('ai'));
+
+/* ================= Init ================= */
+applyModeUI();
+updateMuteBtn();
+fit();
+reset();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
